@@ -117,12 +117,14 @@ func (list *ComponentList) Pop() Component {
 }
 
 type ECS struct {
-	components  []ComponentList
+	components      []ComponentList
+    componentTypes  []ComponentType
 }
 
 func NewECS() *ECS {
     return &ECS {
         components: make([]ComponentList, 0),
+        componentTypes: make([]ComponentType, 0),
     }
 }
 
@@ -142,8 +144,10 @@ func NewECS() *ECS {
 //  }
 func (self *ECS) WithComponentType(handle *ComponentHandle, emptyComponent Component) *ECS {
     *handle = ComponentHandle(len(self.components))
-    components := NewComponentList(CreateComponentType(emptyComponent))
+    componentType := CreateComponentType(emptyComponent)
+    components := NewComponentList(componentType)
     self.components = append(self.components, components)
+    self.componentTypes = append(self.componentTypes, componentType)
     return self
 }
 
