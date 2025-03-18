@@ -30,10 +30,17 @@ func QuickSort[T cmp.Ordered](arr []T, lo, hi uint64) {
     QuickSort(arr, pi + 1, hi)
 }
 
+// Hashed slice of `ComponentHandle`s because you cant use slices in maps
 type ComponentQuery [32]byte
 func CreateQuery(handles ...ComponentHandle) ComponentQuery {
-    var buffer bytes.Buffer
     QuickSort(handles, 0, uint64(len(handles) - 1))
+    return CreateQuerySorted(handles...)
+}
+
+// Creates a `ComponentQuery` without checking if `handles` is sorted.
+// Only use this if you are 100% sure that the handles passed in are already sorted.
+func CreateQuerySorted(handles ...ComponentHandle) ComponentQuery {
+    var buffer bytes.Buffer
     for _, h := range handles {
         buffer.WriteString(strconv.Itoa(int(h)))
         buffer.WriteByte(' ')
