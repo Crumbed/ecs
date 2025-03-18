@@ -1,10 +1,25 @@
 package ecs
 
 import (
+    "math"
 )
+
+type ArchetypeHandle uint64
+type Archetype struct {
+    Type    []ComponentHandle
+}
+
+type EntityHandle uint64
+const InvalidEntityHandle EntityHandle = math.MaxUint64
+type Entity struct {
+    Id      EntityHandle
+    Mask    uint64
+}
 
 
 type ECS struct {
+    archetypes      map[ComponentQuery]Archetype
+    entities        []*Archetype
 	components      []ComponentList
     componentTypes  []ComponentType
 }

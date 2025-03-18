@@ -1,10 +1,46 @@
 package ecs
 
 import (
-    "reflect"
-    "unsafe"
-    "math"
+	"bytes"
+	"cmp"
+	"crypto/sha256"
+	"math"
+	"reflect"
+	"strconv"
+	"unsafe"
 )
+
+func partition[T cmp.Ordered](arr []T, lo, hi uint64) uint64 {
+    pivot := arr[hi]
+    i := lo - 1
+    for j := lo; j <= hi - 1; j += 1 {
+        if arr[j] >= pivot { continue }
+        i += 1
+        arr[i], arr[j] = arr[j], arr[i]
+    }
+
+    arr[i + 1], arr[hi] = arr[hi], arr[i + 1]
+    return i + 1
+}
+
+func QuickSort[T cmp.Ordered](arr []T, lo, hi uint64) {
+    if lo >= hi { return }
+    pi := partition(arr, lo, hi)
+    QuickSort(arr, lo, pi - 1)
+    QuickSort(arr, pi + 1, hi)
+}
+
+type ComponentQuery [32]byte
+func CreateQuery(handles ...ComponentHandle) ComponentQuery {
+    var buffer bytes.Buffer
+    QuickSort(handles, 0, uint64(len(handles) - 1))
+    for _, h := range handles {
+        buffer.WriteString(strconv.Itoa(int(h)))
+        buffer.WriteByte(' ')
+    }
+
+    return ComponentQuery(sha256.Sum256([]byte(buffer.String())))
+}
 
 type ComponentType struct {
     typ     reflect.Type
