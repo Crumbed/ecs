@@ -138,20 +138,18 @@ func (list *ComponentList) Set(i uint64, c unsafe.Pointer) {
     memcpy(p, c, list.size_t)
 }
 
-func (list *ComponentList) Add() Component {
+func (list *ComponentList) Add() {
     if list.len == list.cap {
         //slice := unsafe.Slice((*uint8)(list.array), list.len * uint64(list.size_t))
-        newCap := uint64(float64(list.cap) * 1.5) * uint64(list.size_t)
-        slice := make([]uint8, newCap)
+        newCap := uint64(float64(list.cap) * 1.75) // * uint64(list.size_t)
+        slice := make([]uint8, newCap * uint64(list.size_t))
         newPtr := unsafe.Pointer(&slice[0])
         memcpy(newPtr, list.array, uintptr(list.cap) * list.size_t)
         list.cap = newCap
         list.array = newPtr
     }
 
-    i := list.len
     list.len += 1
-    return list.Get(i)
 }
 
 func (list *ComponentList) Pop() Component {
