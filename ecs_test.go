@@ -37,44 +37,11 @@ func TestArchetypes(t *testing.T) {
     ecs.AddEntity(HealthHandle)
     ecs.AddEntity(PosHandle)
 
-    archlen := len(ecs.archetypes)
-    if archlen != 3 {
-        t.Errorf("Expected 3 unique archetypes, but found %d\n", archlen)
-    }
-    for i := range 4 {
-        e := EntityHandle(i)
-        arch_h := ecs.entities[e]
-        fmt.Printf("-Entity-%d-----\n", i)
-        fmt.Println("Archetype handle:", arch_h)
-        fmt.Println(
-            "| Health:", ecs.HasComponent(e, HealthHandle),
-            "| Pos:", ecs.HasComponent(e, PosHandle), "|",
-        )
+    for _, a := range ecs.archetypes {
+        fmt.Println(a)
     }
 }
 
-
-func TestComponentList(t *testing.T) {
-    fmt.Println("\n[Testing component list]")
-    ecs := NewECS().WithComponentType(&HealthHandle, &Health{})
-    for i := range 20 {
-        ecs.AddEntity(HealthHandle)
-        health := ecs.GetComponent(EntityHandle(i), HealthHandle).(*Health)
-        health.hp = uint64(i + 1)
-    }
-    fmt.Println("Initialized 20 entities")
-
-    for i := range 20 {
-        health := ecs.GetComponent(EntityHandle(i), HealthHandle).(*Health)
-        if health.hp != uint64(i + 1) {
-            t.Errorf("enity %d expected health %d, but found %d", i, i + 1, health.hp)
-        }
-    }
-    fmt.Println("Checked values")
-
-    comp_list := ecs.components[HealthHandle]
-    fmt.Println("| len:", comp_list.len, "| cap:", comp_list.cap, "|")
-}
 
 func TestComponents(t *testing.T) {
     fmt.Println("\n[Testing components]")

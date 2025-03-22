@@ -31,25 +31,26 @@ func QuickSort[T cmp.Ordered](arr []T, lo, hi uint64) {
 }
 
 // Hashed slice of `ComponentHandle`s because you cant use slices in maps
-type ComponentQuery [32]byte
-func CreateQuery(handles ...ComponentHandle) ComponentQuery {
+type ComponentHash [32]byte
+func CreateComponentHash(handles ...ComponentHandle) ComponentHash {
     QuickSort(handles, 0, uint64(len(handles) - 1))
-    return CreateQuerySorted(handles...)
+    return CreateComponentHashSorted(handles...)
 }
 
 // Creates a `ComponentQuery` without checking if `handles` is sorted.
 // Only use this if you are 100% sure that the handles passed in are already sorted.
-func CreateQuerySorted(handles ...ComponentHandle) ComponentQuery {
+func CreateComponentHashSorted(handles ...ComponentHandle) ComponentHash {
     var buffer bytes.Buffer
     for _, h := range handles {
         buffer.WriteString(strconv.Itoa(int(h)))
         buffer.WriteByte(' ')
     }
 
-    return ComponentQuery(sha256.Sum256([]byte(buffer.String())))
+    return ComponentHash(sha256.Sum256([]byte(buffer.String())))
 }
 
 type ComponentType struct {
+    Handle  ComponentHandle
     typ     reflect.Type
     ptr_t   unsafe.Pointer
 }
@@ -68,9 +69,10 @@ type rawInterface struct {
     data    unsafe.Pointer
 }
 
-func CreateComponentType(c Component) ComponentType {
+func CreateComponentType(c Component, handle ComponentHandle) ComponentType {
     raw := *(*rawInterface)(unsafe.Pointer(&c))
     return ComponentType {
+        Handle: handle,
         typ: reflect.TypeOf(c).Elem(),
         ptr_t: raw.typ,
     }
@@ -128,7 +130,7 @@ func (list *ComponentList) GetPtr(i uintptr) unsafe.Pointer {
     return unsafe.Pointer(uintptr(list.array) + i * list.size_t)
 }
 
-func (list *ComponentList) Get(i uint64) Component {
+func (list *ComponentList) Get(i EntityHandle) Component {
     p := list.GetPtr(uintptr(i))
     return MakeComponent(list.ptr_t, p)
 }
@@ -141,7 +143,7 @@ func (list *ComponentList) Set(i uint64, c unsafe.Pointer) {
 func (list *ComponentList) Add() {
     if list.len == list.cap {
         //slice := unsafe.Slice((*uint8)(list.array), list.len * uint64(list.size_t))
-        newCap := uint64(float64(list.cap) * 1.75) // * uint64(list.size_t)
+        newCap := uint64(float64(list.cap) * 1.5) // * uint64(list.size_t)
         slice := make([]uint8, newCap * uint64(list.size_t))
         newPtr := unsafe.Pointer(&slice[0])
         memcpy(newPtr, list.array, uintptr(list.cap) * list.size_t)
@@ -154,5 +156,5 @@ func (list *ComponentList) Add() {
 
 func (list *ComponentList) Pop() Component {
     list.len -= 1
-    return list.Get(list.len)
+    return list.Get(EntityHandle(list.len))
 }

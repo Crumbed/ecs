@@ -2,7 +2,6 @@ package ecs
 
 import (
 	//"fmt"
-	"math"
 )
 
 type Set[T comparable] map[T]struct{}
@@ -20,59 +19,47 @@ func (s Set[T]) Has(e T) bool {
     return has
 }
 
-type ArchetypeHandle uint64
-type Archetype struct {
-    Handle  ArchetypeHandle
-    Type    []ComponentHandle // maybe this should be a ComponentQuery
-    //Set     Set[ComponentHandle]
-}
-
 type EntityHandle uint64
-const InvalidEntityHandle EntityHandle = math.MaxUint64
-type Entity struct {
-    Id      EntityHandle
-    Mask    uint64
-}
 
 
 type ECS struct {
     // ArchetypeHandle -> Archetype
     archetypes      []Archetype
-    archetypeQuery  map[ComponentQuery]ArchetypeHandle
+    archetypeQuery  map[ComponentHash]ArchetypeHandle
+    // EntityHandle -> ArchetypeRecord for the given entity
+    entities        []Record
+
     // ComponentHandle -> Set[ArchetypeHandle] that all contain the given ComponentHandle
     componentIndex  []Set[ArchetypeHandle]
-    // EntityHandle -> ArchetypeHandle of given entity
-    entities        []ArchetypeHandle
-    // ComponentHandle -> ComponentList of proper ComponentType
-	components      []ComponentList
     // ComponentHandle -> ComponentType
     componentTypes  []ComponentType
+
+    //flags           map[string]EntityFlags
 }
 
 func NewECS() *ECS {
     return &ECS {
         archetypes: make([]Archetype, 0),
-        archetypeQuery: make(map[ComponentQuery]ArchetypeHandle),
+        archetypeQuery: make(map[ComponentHash]ArchetypeHandle),
+        entities: make([]Record, 0),
+
         componentIndex: make([]Set[ArchetypeHandle], 0),
-        entities: make([]ArchetypeHandle, 0),
-        components: make([]ComponentList, 0),
         componentTypes: make([]ComponentType, 0),
+
+        //flags: make(map[string]EntityFlags),
     }
 }
 
-func (self *ECS) createArchetype(components []ComponentHandle, query ComponentQuery) ArchetypeHandle {
+func (self *ECS) createArchetype(components []ComponentHandle, query ComponentHash) ArchetypeHandle {
     // create new archetype
     handle := ArchetypeHandle(len(self.archetypes))
-    self.archetypes = append(self.archetypes, Archetype {
-        Type: components,
-        Handle: handle,
-    })
-
-    // update component index with new archetype
-    for _, c := range components {
+    atype := make([]*ComponentType, len(components))
+    for i, c := range components {
+        atype[i] = &self.componentTypes[c]   
         self.componentIndex[c].Add(handle)
     }
 
+    self.archetypes = append(self.archetypes, createArchetype(handle, atype))
     // update archetype query
     self.archetypeQuery[query] = handle
 
@@ -80,30 +67,42 @@ func (self *ECS) createArchetype(components []ComponentHandle, query ComponentQu
 }
 
 func (self *ECS) HasComponent(e EntityHandle, component ComponentHandle) bool {
-    ahandle := self.entities[e]
-    archetype := self.archetypes[ahandle]
+    record := &self.entities[e]
+    archetype := record.Arch
     archset := self.componentIndex[component]
-    return archset.Has(archetype.Handle)
+    return archset.Has(archetype.GetHandle())
 }
 
 func (self *ECS) GetComponent(e EntityHandle, component ComponentHandle) Component {
-    comp_list := self.components[component]
-    return comp_list.Get(uint64(e))
+    record := self.entities[e]
+    arch := record.Arch
+    handle := arch.GetHandle()
+    archset := self.componentIndex[component]
+    if !archset.Has(handle) { return nil }
+    return arch.GetComponent(record.Id, component)
+}
+
+func (self *ECS) GetComponentUnchecked(e EntityHandle, component ComponentHandle) Component {
+    record := self.entities[e]
+    return record.Arch.GetComponent(record.Id, component)
 }
 
 func (self *ECS) AddEntity(components ...ComponentHandle) EntityHandle {
     entity := EntityHandle(len(self.entities))
-    c_query := CreateQuery(components...)
+    c_query := CreateComponentHash(components...)
     // get archetype
     arch_h, exists := self.archetypeQuery[c_query]
     if !exists {
         arch_h = self.createArchetype(components, c_query)
     }
+    arch := self.archetypes[arch_h]
+    arch_entity := arch.CreateEntity()
     
-    self.entities = append(self.entities, arch_h)
-    for i := range self.components {
-        self.components[i].Add()
-    }
+    self.entities = append(self.entities, Record {
+        Arch: arch,
+        Id: arch_entity,
+    })
+
     return entity
 }
 
@@ -122,14 +121,35 @@ func (self *ECS) AddEntity(components ...ComponentHandle) EntityHandle {
 //          WithComponentType(&HealthHandle, &Health{})
 //  }
 func (self *ECS) WithComponentType(handle *ComponentHandle, emptyComponent Component) *ECS {
-    *handle = ComponentHandle(len(self.components))
-    componentType := CreateComponentType(emptyComponent)
+    if len(self.entities) != 0 {
+        panic("Cannot register a new component after adding an entity!")
+    }
+    *handle = ComponentHandle(len(self.componentTypes))
+    componentType := CreateComponentType(emptyComponent, *handle)
+    /*
     components := NewComponentList(componentType)
     self.components = append(self.components, components)
+    */
     self.componentTypes = append(self.componentTypes, componentType)
     self.componentIndex = append(self.componentIndex, NewSet[ArchetypeHandle]())
     return self
 }
+
+func (self *ECS) WithArchetype(handle *ArchetypeHandle, arch Archetype, components ...ComponentHandle) *ECS {
+    if len(self.entities) != 0 {
+        panic("Cannot register a new archetype after adding an entity!")
+    }
+    *handle = ArchetypeHandle(len(self.archetypes))
+    self.archetypes = append(self.archetypes, arch)
+    for _, c := range components {
+        self.componentIndex[c].Add(*handle)
+    }
+    query := CreateComponentHash(components...)
+    self.archetypeQuery[query] = *handle
+
+    return self
+}
+
 
 
 
