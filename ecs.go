@@ -1,8 +1,8 @@
 package ecs
 
-import (
-	//"fmt"
-)
+import "math"
+
+//"fmt"
 
 type Set[T comparable] map[T]struct{}
 func NewSet[T comparable](elements ...T) Set[T] {
@@ -19,9 +19,11 @@ func (s Set[T]) Has(e T) bool {
     return has
 }
 
+const InvalidHandle uint64 = math.MaxUint64
 type EntityHandle uint64
 
 
+var ComponentCount ComponentHandle = 0
 type ECS struct {
     // ArchetypeHandle -> Archetype
     archetypes      []Archetype
@@ -96,7 +98,7 @@ func (self *ECS) AddEntity(components ...ComponentHandle) EntityHandle {
         arch_h = self.createArchetype(components, c_query)
     }
     arch := self.archetypes[arch_h]
-    arch_entity := arch.CreateEntity()
+    arch_entity := arch.CreateEntity(entity)
     
     self.entities = append(self.entities, Record {
         Arch: arch,
@@ -132,6 +134,7 @@ func (self *ECS) WithComponentType(handle *ComponentHandle, emptyComponent Compo
     */
     self.componentTypes = append(self.componentTypes, componentType)
     self.componentIndex = append(self.componentIndex, NewSet[ArchetypeHandle]())
+    ComponentCount += 1
     return self
 }
 
