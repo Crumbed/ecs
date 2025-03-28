@@ -154,10 +154,10 @@ func (list *ComponentList) Add() {
     list.len += 1
 }
 
-func (list *ComponentList) Remove(i uint64) {
-    if i == list.len - 1 { list.Pop(); return }
+func (list *ComponentList) Remove(i EntityHandle) {
+    if uint64(i) == list.len - 1 { list.Pop(); return }
     // how much data needs to be moved
-    len := uintptr(list.len - 1 - i) * list.size_t
+    len := uintptr(list.len - 1 - uint64(i)) * list.size_t
     dest_p := list.GetPtr(uintptr(i))
     dest := unsafe.Slice((*uint8)(dest_p), len)
     // data to be copied

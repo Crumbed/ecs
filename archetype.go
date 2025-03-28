@@ -1,5 +1,7 @@
 package ecs
 
+import "slices"
+
 
 
 
@@ -91,14 +93,24 @@ func (a *GenericArchetype) GetComponent(entity EntityHandle, comp ComponentHandl
 func (a *GenericArchetype) CreateEntity(gobalHandle EntityHandle) EntityHandle {
     handle := EntityHandle(a.Comps[0].len)
     a.Ents = append(a.Ents, gobalHandle)
-    for i := range a.Comps {
+    for i := range len(a.Comps) {
         a.Comps[i].Add()
     }
 
     return handle
 }
 func (a *GenericArchetype) RemoveEntity(handle EntityHandle, ecs *ECS) {
+    for i := range len(a.Comps) {
+        a.Comps[i].Remove(handle)
+    }
 
+    a.Ents = slices.Delete(a.Ents, int(handle), int(handle) + 1)
+    // update global entity records with the new local handle
+    for i := uint64(handle); i < uint64(len(a.Ents)); i += 1 {
+        global := a.Ents[i]
+        record := &ecs.entities[global]
+        record.Id -= 1
+    }
 }
 
 
