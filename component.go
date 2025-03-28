@@ -154,6 +154,19 @@ func (list *ComponentList) Add() {
     list.len += 1
 }
 
+func (list *ComponentList) Remove(i uint64) {
+    if i == list.len - 1 { list.Pop(); return }
+    // how much data needs to be moved
+    len := uintptr(list.len - 1 - i) * list.size_t
+    dest_p := list.GetPtr(uintptr(i))
+    dest := unsafe.Slice((*uint8)(dest_p), len)
+    // data to be copied
+    src_p := list.GetPtr(uintptr(i + 1))
+    src := unsafe.Slice((*uint8)(src_p), len)
+    copy(dest, src)
+    list.len -= 1
+}
+
 func (list *ComponentList) Pop() Component {
     list.len -= 1
     return list.Get(EntityHandle(list.len))

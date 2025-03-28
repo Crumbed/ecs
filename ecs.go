@@ -36,6 +36,7 @@ type ECS struct {
     // ComponentHandle -> ComponentType
     componentTypes  []ComponentType
 
+    systems         []System
     //flags           map[string]EntityFlags
 }
 
@@ -108,6 +109,14 @@ func (self *ECS) AddEntity(components ...ComponentHandle) EntityHandle {
     return entity
 }
 
+// Advance by 1 tick
+func (self *ECS) Step() {
+    for sysi := range len(self.systems) {
+        sys := &self.systems[sysi]
+        sys.Check(self)
+    }
+}
+
 // `handle *ComponentHandle` is set to a value, NEVER CHANGE THIS VALUE AFTER REGISTERING A COMPONENT.
 // `components ComponentList` represents the list of entity components.
 //  EXAMPLE CALL:
@@ -153,6 +162,10 @@ func (self *ECS) WithArchetype(handle *ArchetypeHandle, arch Archetype, componen
     return self
 }
 
+func (self *ECS) WithSystem(sys System) *ECS {
+    self.systems = append(self.systems, sys)
+    return self
+}
 
 
 

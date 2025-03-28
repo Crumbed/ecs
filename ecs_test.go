@@ -79,7 +79,17 @@ func TestComponents(t *testing.T) {
     }
 }
 
-
+func TestQueriesAndSystems(t *testing.T) {
+    fmt.Println("\n[Testing queries & systems]")
+    ecs := NewECS().
+        WithComponentType(&HealthHandle, &Health{}).
+        WithComponentType(&PosHandle, &Pos{})
+    
+    ecs.AddEntity(HealthHandle, PosHandle)
+    ecs.AddEntity(HealthHandle, PosHandle)
+    ecs.AddEntity(HealthHandle)
+    ecs.AddEntity(PosHandle)
+}
 
 
 

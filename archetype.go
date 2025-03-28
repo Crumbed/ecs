@@ -33,6 +33,9 @@ type Archetype interface {
     GetComponent(entity EntityHandle, componentHandle ComponentHandle) Component
     // Takes in a global EntityHandle and returns the local EntityHandle for the new entity
     CreateEntity(gobalHandle EntityHandle) EntityHandle
+    // Takes in a local EntityHandle and removes that entity, also takes in a pointer to the 
+    // ECS incase you need to modify anything there
+    RemoveEntity(entity EntityHandle, ecs *ECS)
     // Local EntityHandle -> Gobal EntityHandle
     GetEntities() []EntityHandle
     // Get the edge of archetypes with/without the given component
@@ -74,17 +77,13 @@ func createArchetype(handle ArchetypeHandle, components []*ComponentType) Archet
         Type: atype,
         Comps: comps,
         Ents: make([]EntityHandle, 0, 1),
-        //Edges: make([]ArchetypeEdge, 0, ComponentCount),
     }
 }
 
 func (a *GenericArchetype) GetHandle() ArchetypeHandle { return a.Handle }
 func (a *GenericArchetype) GetType() []ComponentHandle { return a.Type }
 func (a *GenericArchetype) GetEntities() []EntityHandle { return a.Ents }
-//func (a *GenericArchetype) GetEdge(handle ComponentHandle) *ArchetypeEdge { return &a.Edges[handle] }
-//func (a *GenericArchetype) GetEdges() []ArchetypeEdge { return a.Edges }
 func (a *GenericArchetype) GetComponent(entity EntityHandle, comp ComponentHandle) Component {
-    //c, has := slices.BinarySearch(a.Type, comp)
     c, has := a.CompMap[comp]
     if !has { return nil }
     return a.Comps[c].Get(entity)
@@ -98,39 +97,10 @@ func (a *GenericArchetype) CreateEntity(gobalHandle EntityHandle) EntityHandle {
 
     return handle
 }
+func (a *GenericArchetype) RemoveEntity(handle EntityHandle, ecs *ECS) {
 
-// Is only used for ArchetypeGraph
-//type emptyArchetype struct {
-//    // ComponentHandle -> ArchetypeEdge
-//    Edges   []ArchetypeEdge
-//}
-//
-//func newEmptyArchetype() Archetype {
-//    return &emptyArchetype {
-//        Edges: make([]ArchetypeEdge, 0, ComponentCount),
-//    }
-//}
+}
 
-//func (e *emptyArchetype) GetHandle() ArchetypeHandle { return InvalidArchetypeHandle }
-//func (e *emptyArchetype) GetType() []ComponentHandle { return nil }
-//func (e *emptyArchetype) GetEntities() []EntityHandle { return nil }
-//func (e *emptyArchetype) GetEdge(handle ComponentHandle) *ArchetypeEdge { return &e.Edges[handle] }
-//func (e *emptyArchetype) GetEdges() []ArchetypeEdge { return e.Edges }
-//func (e *emptyArchetype) GetComponent(_ EntityHandle, _ ComponentHandle) Component { return nil }
-//func (e *emptyArchetype) CreateEntity(_ EntityHandle) EntityHandle { return EntityHandle(InvalidHandle) }
-//
-//
-//type ArchetypeGraph struct {
-//    Edges   []ArchetypeEdge
-//}
-//
-//func (g *ArchetypeGraph) Find(comps ...ComponentHandle) *Archetype {
-//    var curr *Archetype
-//    for _, c := range comps {
-//    }
-//
-//    return curr
-//}
 
 
 
