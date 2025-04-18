@@ -30,6 +30,8 @@ type ECS struct {
     archetypeQuery  map[ComponentHash]ArchetypeHandle
     // EntityHandle -> ArchetypeRecord for the given entity
     entities        []Record
+    // List of all removed entities
+    RemovedEntities []EntityHandle
 
     // ComponentHandle -> Set[ArchetypeHandle] that all contain the given ComponentHandle
     componentIndex  []Set[ArchetypeHandle]
@@ -107,6 +109,12 @@ func (self *ECS) AddEntity(components ...ComponentHandle) EntityHandle {
     })
 
     return entity
+}
+
+func (self *ECS) RemoveEntity(handle EntityHandle) {
+    record := &self.entities[handle]
+    record.Arch.RemoveEntity(record.Id, self)
+    record.Id = EntityHandle(InvalidHandle)
 }
 
 // Advance by 1 tick
